@@ -133,8 +133,14 @@ export async function GET(request: NextRequest) {
 
     const health = await container.healthCheck();
 
+    // Return appropriate HTTP status:
+    // - 200 for healthy (all services operational)
+    // - 200 for degraded (app functional, some features unavailable)
+    // - 503 for unhealthy (critical services failing)
+    const httpStatus = health.status === 'unhealthy' ? 503 : 200;
+
     return NextResponse.json(health, {
-      status: health.status === 'healthy' ? 200 : 503,
+      status: httpStatus,
     });
   } catch (error) {
     return NextResponse.json(

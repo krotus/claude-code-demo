@@ -29,7 +29,7 @@ describe('DependencyContainer', () => {
       delete process.env.OPENAI_API_KEY;
 
       // Act
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Assert
       expect(container).toBeDefined();
@@ -41,7 +41,7 @@ describe('DependencyContainer', () => {
       delete process.env.OPENAI_API_KEY;
 
       // Act
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
       const provider = container.getAIProvider();
 
       // Assert
@@ -55,7 +55,7 @@ describe('DependencyContainer', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Act
-      await DependencyContainer.create();
+      await DependencyContainer.create({});
 
       // Assert
       expect(warnSpy).toHaveBeenCalledWith(
@@ -68,7 +68,7 @@ describe('DependencyContainer', () => {
       delete process.env.OPENAI_API_KEY;
 
       // Act
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Assert
       expect(container.getStreamAdapter()).toBeDefined();
@@ -84,7 +84,7 @@ describe('DependencyContainer', () => {
       process.env.OPENAI_API_KEY = 'sk-test-key-for-testing';
 
       // Act
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
       const provider = container.getAIProvider();
 
       // Assert
@@ -97,7 +97,7 @@ describe('DependencyContainer', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Act
-      await DependencyContainer.create();
+      await DependencyContainer.create({});
 
       // Assert
       expect(warnSpy).not.toHaveBeenCalledWith(
@@ -110,16 +110,15 @@ describe('DependencyContainer', () => {
     it('should return degraded status when API key is missing', async () => {
       // Arrange
       delete process.env.OPENAI_API_KEY;
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Act
       const health = await container.healthCheck();
 
       // Assert
       expect(health.status).toBe('degraded');
-      expect(health.warnings).toContain(
-        expect.stringContaining('AI Provider is not configured')
-      );
+      expect(health.warnings.length).toBeGreaterThan(0);
+      expect(health.warnings[0]).toContain('AI Provider is not configured');
       expect(health.services.aiProvider).toBe(false);
       expect(health.services.aiProviderName).toBe('None (AI Provider Not Configured)');
     });
@@ -127,7 +126,7 @@ describe('DependencyContainer', () => {
     it('should return healthy status when API key is present', async () => {
       // Arrange
       process.env.OPENAI_API_KEY = 'sk-test-key-for-testing';
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Act
       const health = await container.healthCheck();
@@ -144,7 +143,7 @@ describe('DependencyContainer', () => {
     it('should include all required services in health check', async () => {
       // Arrange
       delete process.env.OPENAI_API_KEY;
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Act
       const health = await container.healthCheck();
@@ -162,7 +161,7 @@ describe('DependencyContainer', () => {
     it('should have warnings array when degraded', async () => {
       // Arrange
       delete process.env.OPENAI_API_KEY;
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Act
       const health = await container.healthCheck();
@@ -177,7 +176,7 @@ describe('DependencyContainer', () => {
     it('should create all use cases without API key', async () => {
       // Arrange
       delete process.env.OPENAI_API_KEY;
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Act & Assert - should not throw
       expect(() => container.getStreamChatCompletionUseCase()).not.toThrow();
@@ -189,7 +188,7 @@ describe('DependencyContainer', () => {
     it('should return use cases that work with NullAIProvider', async () => {
       // Arrange
       delete process.env.OPENAI_API_KEY;
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
 
       // Act
       const streamUseCase = container.getStreamChatCompletionUseCase();
@@ -208,7 +207,7 @@ describe('DependencyContainer', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Act
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
       const provider = container.getAIProvider();
 
       // Assert
@@ -221,7 +220,7 @@ describe('DependencyContainer', () => {
     it('should handle whitespace-only API key as missing', async () => {
       // Arrange
       process.env.OPENAI_API_KEY = '   ';
-      const container = await DependencyContainer.create();
+      const container = await DependencyContainer.create({});
       const provider = container.getAIProvider();
 
       // Assert
@@ -237,8 +236,8 @@ describe('DependencyContainer', () => {
       delete process.env.OPENAI_API_KEY;
 
       // Act
-      const container1 = await DependencyContainer.create();
-      const container2 = await DependencyContainer.create();
+      const container1 = await DependencyContainer.create({});
+      const container2 = await DependencyContainer.create({});
 
       // Assert
       expect(container1).toBe(container2);
@@ -247,11 +246,11 @@ describe('DependencyContainer', () => {
     it('should reset singleton when reset() is called', async () => {
       // Arrange
       delete process.env.OPENAI_API_KEY;
-      const container1 = await DependencyContainer.create();
+      const container1 = await DependencyContainer.create({});
 
       // Act
       DependencyContainer.reset();
-      const container2 = await DependencyContainer.create();
+      const container2 = await DependencyContainer.create({});
 
       // Assert
       expect(container1).not.toBe(container2);

@@ -3,8 +3,11 @@
 
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
+
   test: {
     // Use Node.js environment for pure domain logic tests
     environment: 'node',
@@ -63,17 +66,6 @@ export default defineConfig({
       // Report uncovered lines
       all: true,
       reportOnFailure: true,
-    },
-  },
-
-  // Path resolution matching tsconfig.json
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './'),
-      '@/domain': path.resolve(__dirname, './src/domain'),
-      '@/application': path.resolve(__dirname, './src/application'),
-      '@/infrastructure': path.resolve(__dirname, './src/infrastructure'),
-      '@/presentation': path.resolve(__dirname, './src/presentation'),
     },
   },
 });

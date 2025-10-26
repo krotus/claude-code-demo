@@ -13,6 +13,7 @@ import { ExecuteToolUseCase } from '../../application/use-cases/ExecuteToolUseCa
 import { ManageConversationUseCase } from '../../application/use-cases/ManageConversationUseCase';
 
 import { OpenAIAdapter } from '../adapters/ai/OpenAIAdapter';
+import { NullAIProvider } from '../adapters/ai/NullAIProvider';
 import { VercelStreamAdapter } from '../adapters/streaming/VercelStreamAdapter';
 import { WeatherToolAdapter } from '../adapters/tools/WeatherToolAdapter';
 import { WeatherTool } from '../adapters/tools/WeatherTool';
@@ -84,12 +85,23 @@ export class DependencyContainer {
   private async initializeAdapters(): Promise<void> {
     // Get API key from config or environment
     const apiKey = this.config.openaiApiKey || process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
-    }
 
-    // Initialize AI provider
-    this.aiProvider = new OpenAIAdapter(apiKey);
+    // Initialize AI provider with graceful degradation
+    if (!apiKey) {
+      console.warn('[DependencyContainer] OPENAI_API_KEY not configured - AI features disabled');
+      this.aiProvider = new NullAIProvider();
+    } else {
+      try {
+        this.aiProvider = new OpenAIAdapter(apiKey);
+        if (this.config.enableLogging) {
+          console.log('[DependencyContainer] OpenAI adapter initialized');
+        }
+      } catch (error) {
+        console.error('[DependencyContainer] OpenAI initialization failed:', error);
+        console.warn('[DependencyContainer] Falling back to NullAIProvider');
+        this.aiProvider = new NullAIProvider();
+      }
+    }
 
     // Initialize streaming adapter
     this.streamAdapter = new VercelStreamAdapter();
@@ -230,18 +242,27 @@ export class DependencyContainer {
    * Health check for the container
    */
   async healthCheck(): Promise<{
-    status: 'healthy' | 'unhealthy';
-    services: Record<string, boolean | number>;
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    services: Record<string, boolean | number | string>;
     errors: string[];
+    warnings: string[];
   }> {
     const errors: string[] = [];
-    const services: Record<string, boolean | number> = {};
+    const warnings: string[] = [];
+    const services: Record<string, boolean | number | string> = {};
 
     // Check AI provider
     try {
       services.aiProvider = await this.aiProvider.validateConnection();
+      services.aiProviderName = this.aiProvider.getProviderName();
+
+      // If AI provider is not available, add a warning (not an error)
+      if (!services.aiProvider) {
+        warnings.push('AI Provider is not configured or unavailable - chat features are disabled');
+      }
     } catch (error) {
       services.aiProvider = false;
+      services.aiProviderName = this.aiProvider.getProviderName();
       errors.push(`AI Provider: ${(error as Error).message}`);
     }
 
@@ -267,12 +288,21 @@ export class DependencyContainer {
     services.toolRegistry = this.toolRegistry.count() > 0;
     services.registeredTools = this.toolRegistry.count();
 
-    const status = errors.length === 0 ? 'healthy' : 'unhealthy';
+    // Determine overall status
+    let status: 'healthy' | 'degraded' | 'unhealthy';
+    if (errors.length > 0) {
+      status = 'unhealthy';
+    } else if (warnings.length > 0) {
+      status = 'degraded';
+    } else {
+      status = 'healthy';
+    }
 
     return {
       status,
       services,
       errors,
+      warnings,
     };
   }
 

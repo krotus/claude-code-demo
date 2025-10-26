@@ -6,6 +6,8 @@
 import { PreviewMessage, ThinkingMessage } from "./message";
 import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
+import { AIUnavailableBanner } from "@/app/features/ai-status/components/ai-unavailable-banner";
+import { useAIStatus } from "@/app/features/ai-status";
 import type { Message, CreateMessage, ChatRequestOptions } from "ai";
 import type { RefObject, Dispatch, SetStateAction } from "react";
 
@@ -59,12 +61,20 @@ export function Chat({
   messagesContainerRef,
   messagesEndRef,
 }: ChatProps) {
+  const { isAIChatAvailable } = useAIStatus();
+
   return (
     <div className="flex flex-col min-w-0 h-[calc(100dvh-52px)] bg-background">
       <div
         ref={messagesContainerRef}
         className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
       >
+        {!isAIChatAvailable && (
+          <div className="px-4">
+            <AIUnavailableBanner />
+          </div>
+        )}
+
         {isEmpty && <Overview />}
 
         {messages.map((message: Message, index: number) => (

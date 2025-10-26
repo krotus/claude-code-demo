@@ -108,15 +108,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API route error:', error);
 
-    // Handle initialization errors
-    if (error instanceof Error && error.message.includes('OPENAI_API_KEY')) {
-      return NextResponse.json(
-        { error: 'AI service not configured. Please check your API keys.' },
-        { status: 503 }
-      );
-    }
-
     // Generic error response
+    // Note: AI availability errors are now communicated via streaming protocol,
+    // not as HTTP errors. The container gracefully degrades to NullAIProvider.
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -139,8 +133,14 @@ export async function GET(request: NextRequest) {
 
     const health = await container.healthCheck();
 
+    // Return appropriate HTTP status:
+    // - 200 for healthy (all services operational)
+    // - 200 for degraded (app functional, some features unavailable)
+    // - 503 for unhealthy (critical services failing)
+    const httpStatus = health.status === 'unhealthy' ? 503 : 200;
+
     return NextResponse.json(health, {
-      status: health.status === 'healthy' ? 200 : 503,
+      status: httpStatus,
     });
   } catch (error) {
     return NextResponse.json(

@@ -9,6 +9,7 @@ import { ConversationSidebar } from "@/app/features/conversation/components/conv
 import { Navbar } from "@/components/navbar";
 import { useState, useCallback } from "react";
 import { ConversationHandlersContext } from "@/app/features/conversation/hooks/useConversationHandlers";
+import { AIStatusProvider } from "@/app/features/ai-status";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,7 +64,9 @@ export default function ChatLayout({
 }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ChatLayoutContent>{children}</ChatLayoutContent>
+      <AIStatusProvider>
+        <ChatLayoutContent>{children}</ChatLayoutContent>
+      </AIStatusProvider>
     </QueryClientProvider>
   );
 }

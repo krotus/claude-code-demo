@@ -18,6 +18,7 @@ import { cn, sanitizeUIMessages } from "@/lib/utils";
 import { ArrowUpIcon, StopIcon } from "@/app/features/conversation/components/icons";
 import {Button} from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useAIStatus } from "@/app/features/ai-status";
 
 
 const suggestedActions = [
@@ -66,6 +67,7 @@ export function MultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+  const { isAIChatAvailable } = useAIStatus();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -117,7 +119,7 @@ export function MultimodalInput({
 
   return (
     <div className="relative w-full flex flex-col gap-4">
-      {messages.length === 0 && (
+      {messages.length === 0 && isAIChatAvailable && (
         <div className="grid sm:grid-cols-2 gap-2 w-full">
           {suggestedActions.map((suggestedAction, index) => (
             <motion.div
@@ -150,11 +152,13 @@ export function MultimodalInput({
 
       <Textarea
         ref={textareaRef}
-        placeholder="Send a message..."
+        placeholder={isAIChatAvailable ? "Send a message..." : "AI chat is currently unavailable"}
         value={input}
         onChange={handleInput}
+        disabled={!isAIChatAvailable}
         className={cn(
           "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-xl !text-base bg-muted",
+          !isAIChatAvailable && "cursor-not-allowed opacity-50",
           className,
         )}
         rows={3}

@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getContainer } from '@/src/infrastructure/config/container';
+import { ToolName } from '@/domain/value-objects/ToolName';
 
 /**
  * GET /api/config/status
@@ -60,7 +61,8 @@ export async function GET(request: NextRequest) {
     // Get tool registry status
     const toolRegistry = container.getToolRegistry();
     const toolCount = toolRegistry.count();
-    const weatherToolAvailable = toolRegistry.getTool('get_current_weather') !== undefined;
+    const weatherToolName = ToolName.from('get_current_weather');
+    const weatherToolAvailable = toolRegistry.getTool(weatherToolName) !== undefined;
 
     // Build response
     const response = {

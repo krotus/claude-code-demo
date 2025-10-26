@@ -108,15 +108,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API route error:', error);
 
-    // Handle initialization errors
-    if (error instanceof Error && error.message.includes('OPENAI_API_KEY')) {
-      return NextResponse.json(
-        { error: 'AI service not configured. Please check your API keys.' },
-        { status: 503 }
-      );
-    }
-
     // Generic error response
+    // Note: AI availability errors are now communicated via streaming protocol,
+    // not as HTTP errors. The container gracefully degrades to NullAIProvider.
     return NextResponse.json(
       {
         error: 'Internal server error',
